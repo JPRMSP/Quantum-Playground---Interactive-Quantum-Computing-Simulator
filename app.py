@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Quantum Playground", layout="wide")
-
+st.title("Interactive Quantum Playground")
 
 # Define basic gates
 X = np.array([[0,1],[1,0]], dtype=complex)
