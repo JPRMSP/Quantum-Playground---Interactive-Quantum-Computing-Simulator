@@ -1,81 +1,92 @@
-# Dynamic Qiskit installation if missing
-import sys
-import subprocess
-
-try:
-    import qiskit
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "qiskit"])
-
 import streamlit as st
-from qiskit import QuantumCircuit, Aer, execute
-from qiskit.visualization import plot_bloch_multivector, plot_histogram
-from qiskit.quantum_info import Statevector
+import numpy as np
 import matplotlib.pyplot as plt
 
-# Streamlit config and styling
 st.set_page_config(page_title="Quantum Playground", layout="wide")
-st.markdown("<h1 style='text-align:center; color:#f0f0f0;'>🪐 Interactive Quantum Playground</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center; color:#f0f0f0;'>🪐 Interactive Quantum Playground (No Qiskit)</h1>", unsafe_allow_html=True)
 st.markdown("<style>body {background-color:#1e1e1e; color:#f0f0f0;}</style>", unsafe_allow_html=True)
 
-# Initialize 2-qubit quantum circuit
-num_qubits = 2
-qc = QuantumCircuit(num_qubits)
+# Define basic gates
+X = np.array([[0,1],[1,0]], dtype=complex)
+Y = np.array([[0,-1j],[1j,0]], dtype=complex)
+Z = np.array([[1,0],[0,-1]], dtype=complex)
+H = (1/np.sqrt(2))*np.array([[1,1],[1,-1]], dtype=complex)
+I = np.eye(2, dtype=complex)
+CX = np.array([[1,0,0,0],
+               [0,1,0,0],
+               [0,0,0,1],
+               [0,0,1,0]], dtype=complex)
 
-# Sidebar: Quantum Gate Application
-st.sidebar.markdown("### Apply Quantum Gates")
+# Initialize 2-qubit state |00>
+state = np.zeros(4, dtype=complex)
+state[0] = 1.0
+
+# Sidebar for gate selection
+st.sidebar.markdown("### Apply Gates")
 gate_options = ["None", "X", "Y", "Z", "H", "CX"]
+gate1 = st.sidebar.selectbox("Gate on Qubit 0", gate_options)
+gate2 = st.sidebar.selectbox("Gate on Qubit 1", gate_options)
 
-for i in range(num_qubits):
-    gate = st.sidebar.selectbox(f"Gate on Qubit {i}", gate_options, key=f"gate{i}")
-    target = None
-    if gate == "CX":
-        target = st.sidebar.selectbox(f"Target qubit for CX from qubit {i}", [q for q in range(num_qubits) if q != i], key=f"target{i}")
-    if gate != "None":
-        if gate == "X": qc.x(i)
-        elif gate == "Y": qc.y(i)
-        elif gate == "Z": qc.z(i)
-        elif gate == "H": qc.h(i)
-        elif gate == "CX" and target is not None: qc.cx(i, target)
+def apply_gate(state, gate_name, qubit):
+    if gate_name == "X":
+        gate = X
+    elif gate_name == "Y":
+        gate = Y
+    elif gate_name == "Z":
+        gate = Z
+    elif gate_name == "H":
+        gate = H
+    else:
+        return state
+    # Apply gate to the correct qubit
+    if qubit == 0:
+        gate_full = np.kron(gate, I)
+    else:
+        gate_full = np.kron(I, gate)
+    return gate_full @ state
+
+# Apply single-qubit gates
+state = apply_gate(state, gate1, 0)
+state = apply_gate(state, gate2, 1)
+
+# Apply CNOT if selected
+if gate1 == "CX":
+    state = CX @ state
+if gate2 == "CX":
+    state = CX @ state
+
+# Display state vector
+st.subheader("Quantum State Vector |ψ⟩")
+st.text(np.round(state,3))
+
+# Measurement probabilities
+st.subheader("Measurement Probabilities")
+probs = np.abs(state)**2
+for i, p in enumerate(probs):
+    st.write(f"|{i:02b}⟩ : {p:.3f}")
+
+# Bloch sphere (2D projection)
+st.subheader("Bloch Sphere (2D projection)")
+fig, ax = plt.subplots()
+x = [np.real(state[0]), np.real(state[1])]
+y = [np.imag(state[0]), np.imag(state[1])]
+ax.quiver(0,0,x[0],y[0], angles='xy', scale_units='xy', scale=1, color='cyan', label='Qubit 0')
+ax.quiver(0,0,x[1],y[1], angles='xy', scale_units='xy', scale=1, color='magenta', label='Qubit 1')
+ax.set_xlim(-1,1)
+ax.set_ylim(-1,1)
+ax.set_xlabel('Real')
+ax.set_ylabel('Imag')
+ax.set_title('2D Bloch Sphere Projection')
+ax.grid(True)
+ax.legend()
+st.pyplot(fig)
 
 # Teleportation Demo
-st.sidebar.markdown("### Quantum Teleportation Demo")
+st.sidebar.markdown("### Teleportation Demo")
 if st.sidebar.button("Run Teleportation"):
-    qc = QuantumCircuit(3)
-    qc.h(1)
-    qc.cx(1, 2)
-    qc.cx(0, 1)
-    qc.h(0)
-    qc.barrier()
-    qc.measure_all()
-    st.success("Teleportation circuit applied with 3 qubits!")
-
-# Display Quantum Circuit
-st.subheader("Quantum Circuit")
-st.text(qc.draw(output='text'))
-
-# Quantum State Visualization
-state = Statevector.from_instruction(qc)
-st.subheader("Bloch Sphere Visualization")
-fig_bloch = plot_bloch_multivector(state)
-st.pyplot(fig_bloch)
-
-# Measurement Probabilities
-st.subheader("Measurement Probabilities")
-qc_measure = qc.copy()
-qc_measure.measure_all()
-backend = Aer.get_backend('qasm_simulator')
-result = execute(qc_measure, backend, shots=1024).result()
-counts = result.get_counts()
-fig_hist = plot_histogram(counts)
-st.pyplot(fig_hist)
-
-# Notes
-st.subheader("🔹 Notes")
-st.markdown("""
-- Use the sidebar to apply quantum gates.
-- Bloch Sphere shows qubit superposition states.
-- Measurement histogram shows probabilities after measuring qubits.
-- Teleportation demo uses a simple 3-qubit circuit.
-- Try different combinations of gates and observe results!
-""")
+    # Simple 2-qubit entanglement demonstration
+    teleport_state = np.zeros(4, dtype=complex)
+    teleport_state[0] = 1/np.sqrt(2)
+    teleport_state[3] = 1/np.sqrt(2)
+    st.success("Teleportation-like entangled state created!")
+    st.write(np.round(teleport_state,3))
