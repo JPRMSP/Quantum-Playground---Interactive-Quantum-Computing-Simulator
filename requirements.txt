@@ -1,4 +1,4 @@
-streamlit
-qiskit
-matplotlib
-plotly
+streamlit>=1.22.0
+qiskit>=0.41.0
+matplotlib>=3.7.2
+plotly>=5.18.0
