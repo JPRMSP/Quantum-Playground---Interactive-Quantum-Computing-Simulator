@@ -5,10 +5,10 @@ import plotly.graph_objects as go
 import numpy as np
 from io import BytesIO
 
-st.set_page_config(page_title="Quantum Teleportation Animation", layout="wide")
-st.title("🚀 Multi-Qubit Animated Quantum Playground")
+st.set_page_config(page_title="Quantum Playground Cloud", layout="wide")
+st.title("🚀 Quantum Computing Playground (Cloud Compatible)")
 
-# Sidebar
+# Sidebar options
 st.sidebar.header("Quantum Circuit Options")
 algorithm = st.sidebar.selectbox(
     "Select Quantum Algorithm",
@@ -16,7 +16,7 @@ algorithm = st.sidebar.selectbox(
 )
 qubits = st.sidebar.slider("Number of Qubits", 1, 3, 2)
 
-# Bloch coordinates calculation
+# Function to calculate Bloch sphere coordinates
 def bloch_coords(statevector):
     coords = []
     for amp in statevector.data:
@@ -25,7 +25,7 @@ def bloch_coords(statevector):
         coords.append((np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)))
     return coords
 
-# Function to animate multiple qubits
+# Function to animate multiple qubits on Bloch spheres
 def animate_multi_bloch(circuit):
     frames = []
     current_circuit = QuantumCircuit(circuit.num_qubits)
@@ -65,7 +65,11 @@ def animate_multi_bloch(circuit):
     )
     return fig
 
-# Circuit definition
+# Function to draw circuit diagram
+def draw_circuit(qc):
+    st.pyplot(qc.draw('mpl'))
+
+# Circuit definitions
 if algorithm == "Quantum Teleportation":
     qc = QuantumCircuit(3)
     st.subheader("Quantum Teleportation Circuit")
@@ -99,13 +103,11 @@ else:
         if qubits > 1:
             qc.cx(0,1)
 
-# Display circuit diagram
-st.pyplot(qc.draw('mpl'))
-
-# Display animated Bloch spheres
+# Display circuit diagram and animation
+draw_circuit(qc)
 st.plotly_chart(animate_multi_bloch(qc))
 
-# Download final frame
+# Download final Bloch sphere frame
 final_state = Statevector.from_instruction(qc)
 buffer = BytesIO()
 fig = animate_multi_bloch(qc)
