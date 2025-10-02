@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Quantum Playground", layout="wide")
-st.markdown("<h1 style='text-align:center; color:#f0f0f0;'>🪐 Interactive Quantum Playground (No Qiskit)</h1>", unsafe_allow_html=True)
-st.markdown("<style>body {background-color:#1e1e1e; color:#f0f0f0;}</style>", unsafe_allow_html=True)
+
 
 # Define basic gates
 X = np.array([[0,1],[1,0]], dtype=complex)
