@@ -6,7 +6,6 @@ from mpl_toolkits.mplot3d import Axes3D
 # ---------------------------------------------------------
 # ⚛️ Quantum Playground – Interactive Quantum Simulator
 # ---------------------------------------------------------
-# Built from scratch using only NumPy and Matplotlib.
 # Features:
 #  - Qubit simulator + 3D Bloch sphere visualization
 #  - Quantum teleportation simulator
@@ -17,13 +16,29 @@ from mpl_toolkits.mplot3d import Axes3D
 # Streamlit Page Config
 st.set_page_config(page_title="Quantum Playground", page_icon="⚛️", layout="wide")
 
-# Apply dark mode background
+# ---------------- Dark & Readable Theme -----------------
 st.markdown(
     """
     <style>
-    .main { background-color: #0e1117; color: #f5f5f5; }
-    .stMarkdown, .stRadio, .stSelectbox, .stMultiSelect, .stButton, .stSlider { color: #f5f5f5; }
-    h1, h2, h3, h4 { color: #00e6a8; }
+    /* Main background */
+    .main { background-color: #0e1117; color: #f0f0f0; }
+
+    /* Text colors for readability */
+    .stMarkdown, .stRadio, .stSelectbox, .stMultiSelect, .stButton, .stSlider, .stExpanderContent {
+        color: #f0f0f0 !important;
+    }
+
+    /* Headers */
+    h1, h2, h3, h4 { color: #00ff99 !important; }
+
+    /* Links */
+    a { color: #00e6ff !important; }
+
+    /* Code blocks */
+    .stCodeBlock, .stCode { background-color: #1c1c1c; color: #ffffff; }
+
+    /* Sidebar */
+    .css-1d391kg { background-color: #0e1117 !important; color: #f0f0f0 !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -42,7 +57,7 @@ def ket0():
 def ket1():
     return np.array([[0], [1]], dtype=complex)
 
-# Basic gates
+# Quantum gates
 I = np.array([[1, 0], [0, 1]], dtype=complex)
 X = np.array([[0, 1], [1, 0]], dtype=complex)
 Y = np.array([[0, -1j], [1j, 0]], dtype=complex)
@@ -67,7 +82,6 @@ def measure(state):
 
 def plot_bloch(state):
     """3D Bloch sphere for a single qubit state"""
-    # Extract alpha, beta
     alpha = state[0, 0]
     beta = state[1, 0]
 
@@ -111,17 +125,13 @@ def plot_bloch(state):
 
 tabs = st.tabs(["🧬 Qubit Simulator", "📡 Quantum Teleportation", "🔍 Grover’s Search", "📚 Theory"])
 
-# ---------------------------------------------------------
-# Tab 1: Qubit Simulator
-# ---------------------------------------------------------
+# ---------------- Tab 1: Qubit Simulator -----------------
 with tabs[0]:
     st.header("🧬 Qubit State Simulator + 3D Bloch Sphere")
 
-    # Choose initial state
     qubit_choice = st.radio("Choose initial qubit state:", ["|0⟩", "|1⟩"])
     state = ket0() if qubit_choice == "|0⟩" else ket1()
 
-    # Apply gates
     gate_choice = st.multiselect("Apply gates (in order):", ["X", "Y", "Z", "H"])
     for g in gate_choice:
         if g == "X":
@@ -133,45 +143,35 @@ with tabs[0]:
         elif g == "H":
             state = H @ state
 
-    # Show final state
     st.subheader("📊 Final State Vector:")
     st.code(state)
 
-    # Measurement simulation
     meas = measure(state)
     st.success(f"📏 Measurement result: |{meas}⟩")
 
-    # Plot Bloch sphere
     st.subheader("🌐 3D Bloch Sphere Visualization")
     st.pyplot(plot_bloch(state))
 
-# ---------------------------------------------------------
-# Tab 2: Quantum Teleportation
-# ---------------------------------------------------------
+# ---------------- Tab 2: Quantum Teleportation -----------------
 with tabs[1]:
     st.header("📡 Quantum Teleportation Simulator")
     st.markdown("This simulation demonstrates how an unknown quantum state can be transferred from Alice to Bob using entanglement and classical communication.")
 
     if st.button("Run Teleportation Simulation"):
-        # Prepare |ψ> state (unknown state)
         psi = (1/np.sqrt(2)) * (ket0() + ket1())
         alice = ket0()
         bob = ket0()
 
-        # Full 3-qubit state: |ψ>|0>|0>
         state_total = tensor(psi, alice, bob)
 
-        # Create Bell pair between qubits 2 and 3
         state_total = tensor(I, H, I) @ state_total
 
-        # CNOT(2->3)
         CNOT_23 = np.kron(I, np.array([[1,0,0,0],
                                        [0,1,0,0],
                                        [0,0,0,1],
                                        [0,0,1,0]], dtype=complex))
         state_total = CNOT_23 @ state_total
 
-        # Alice performs CNOT(1->2) and H on qubit 1
         CNOT_12 = np.kron(np.array([[1,0,0,0],
                                     [0,1,0,0],
                                     [0,0,0,1],
@@ -182,9 +182,7 @@ with tabs[1]:
         st.success("✅ Teleportation complete! The unknown state has been transferred to Bob.")
         st.code(state_total)
 
-# ---------------------------------------------------------
-# Tab 3: Grover’s Search
-# ---------------------------------------------------------
+# ---------------- Tab 3: Grover’s Search -----------------
 with tabs[2]:
     st.header("🔍 Grover’s Search Algorithm Demo")
     st.markdown("Grover's algorithm searches an unsorted database faster than classical algorithms.")
@@ -195,11 +193,9 @@ with tabs[2]:
     if st.button("Run Grover Search"):
         psi = (1/2) * np.array([[1], [1], [1], [1]], dtype=complex)
 
-        # Oracle
         O = np.eye(4, dtype=complex)
         O[oracle_index, oracle_index] = -1
 
-        # Diffusion
         D = 2 * (1/4 * np.ones((4, 4), dtype=complex)) - np.eye(4)
 
         psi = D @ (O @ psi)
@@ -211,9 +207,7 @@ with tabs[2]:
         found_state = np.argmax(probs)
         st.success(f"✅ Grover found: {['|00⟩', '|01⟩', '|10⟩', '|11⟩'][found_state]} with probability {probs[found_state]:.2f}")
 
-# ---------------------------------------------------------
-# Tab 4: Theory
-# ---------------------------------------------------------
+# ---------------- Tab 4: Theory -----------------
 with tabs[3]:
     st.header("📚 Quantum Computing Concepts – Quick Theory")
     st.markdown("""
