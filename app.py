@@ -1,44 +1,52 @@
 import streamlit as st
-from qiskit import QuantumCircuit, execute
-from qiskit.quantum_info import Statevector
-from qiskit.providers.basicaer import QasmSimulator
-import plotly.graph_objects as go
 import numpy as np
+import plotly.graph_objects as go
 from io import BytesIO
 
-st.set_page_config(page_title="Quantum Playground Cloud", layout="wide")
-st.title("🚀 Quantum Computing Playground (Cloud Compatible)")
+st.set_page_config(page_title="Pure Python Quantum Playground", layout="wide")
+st.title("🚀 Pure Python Quantum Computing Playground")
 
 # Sidebar options
 st.sidebar.header("Quantum Circuit Options")
 algorithm = st.sidebar.selectbox(
     "Select Quantum Algorithm",
-    ["Quantum Teleportation", "Superdense Coding", "Quantum Fourier Transform", "Custom Circuit"]
+    ["Quantum Teleportation", "Superdense Coding", "Custom Circuit"]
 )
-qubits = st.sidebar.slider("Number of Qubits", 1, 3, 2)
+qubits = st.sidebar.slider("Number of Qubits", 1, 2, 1)
 
-# Bloch sphere coordinates
-def bloch_coords(statevector):
-    coords = []
-    for amp in statevector.data:
-        theta = 2 * np.arccos(np.abs(amp))
-        phi = np.angle(amp)
-        coords.append((np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)))
-    return coords
+# Basic quantum gates in matrix form
+H = 1/np.sqrt(2) * np.array([[1, 1], [1, -1]])
+X = np.array([[0, 1], [1, 0]])
+Z = np.array([[1, 0], [0, -1]])
 
-# Animate multiple qubits
-def animate_multi_bloch(circuit):
+# Initialize state |0>
+def init_state(n):
+    state = np.zeros((2**n,), dtype=complex)
+    state[0] = 1
+    return state
+
+# Apply single-qubit gate
+def apply_gate(state, gate, qubit, n):
+    full_gate = 1
+    for i in range(n):
+        full_gate = np.kron(full_gate, gate if i == qubit else np.eye(2))
+    return full_gate @ state
+
+# Bloch coordinates from single qubit state
+def bloch_coords_single(state):
+    alpha, beta = state[0], state[1]
+    x = 2 * (alpha.conj()*beta).real
+    y = 2 * (alpha.conj()*beta).imag
+    z = abs(alpha)**2 - abs(beta)**2
+    return x, y, z
+
+# Animate Bloch sphere
+def animate_bloch(states):
     frames = []
-    current_circuit = QuantumCircuit(circuit.num_qubits)
-    
-    for instr, qargs, cargs in circuit.data:
-        current_circuit.append(instr, qargs, cargs)
-        state = Statevector.from_instruction(current_circuit)
-        x, y, z = zip(*bloch_coords(state))
-        traces = [go.Scatter3d(x=[xi], y=[yi], z=[zi], mode='markers',
-                               marker=dict(size=6, color='red')) for xi, yi, zi in zip(x, y, z)]
-        frames.append(go.Frame(data=traces))
-    
+    for state in states:
+        x, y, z = bloch_coords_single(state)
+        frames.append(go.Frame(data=[go.Scatter3d(x=[x], y=[y], z=[z], mode='markers', 
+                                                  marker=dict(size=6, color='red'))]))
     # Sphere wireframe
     u, v = np.mgrid[0:2*np.pi:50j, 0:np.pi:25j]
     xs = np.cos(u)*np.sin(v)
@@ -62,56 +70,44 @@ def animate_multi_bloch(circuit):
     )
     return fig
 
-# Draw circuit
-def draw_circuit(qc):
-    st.pyplot(qc.draw('mpl'))
+# Simulate circuit
+state = init_state(qubits)
+states_list = [state.copy()]
 
-# Define circuits
-if algorithm == "Quantum Teleportation":
-    qc = QuantumCircuit(3)
-    st.subheader("Quantum Teleportation Circuit")
-    qc.h(1)
-    qc.cx(1,2)
-    qc.cx(0,1)
-    qc.h(0)
+if algorithm == "Custom Circuit":
+    if st.button("Apply Hadamard"):
+        state = apply_gate(state, H, 0, qubits)
+        states_list.append(state.copy())
+    if st.button("Apply X"):
+        state = apply_gate(state, X, 0, qubits)
+        states_list.append(state.copy())
+elif algorithm == "Quantum Teleportation":
+    if qubits != 2:
+        st.warning("Quantum teleportation requires 2 qubits")
+    else:
+        state = apply_gate(state, H, 0, qubits)
+        states_list.append(state.copy())
+        state = apply_gate(state, X, 1, qubits)
+        states_list.append(state.copy())
 elif algorithm == "Superdense Coding":
-    qc = QuantumCircuit(2)
-    st.subheader("Superdense Coding Circuit")
-    qc.h(0)
-    qc.cx(0,1)
-    qc.x(0)
-    qc.z(0)
-    qc.cx(0,1)
-    qc.h(0)
-elif algorithm == "Quantum Fourier Transform":
-    qc = QuantumCircuit(qubits)
-    st.subheader(f"Quantum Fourier Transform Circuit ({qubits} qubits)")
-    for j in range(qubits):
-        qc.h(j)
-        for k in range(j+1, qubits):
-            qc.cp(np.pi/2**(k-j), k, j)
-else:
-    qc = QuantumCircuit(qubits)
-    st.subheader("Custom Circuit")
-    if st.button("Apply Hadamard to all qubits"):
-        for i in range(qubits):
-            qc.h(i)
-    if st.button("Apply CNOT (0->1)"):
-        if qubits > 1:
-            qc.cx(0,1)
+    if qubits != 2:
+        st.warning("Superdense coding requires 2 qubits")
+    else:
+        state = apply_gate(state, H, 0, qubits)
+        states_list.append(state.copy())
+        state = apply_gate(state, Z, 0, qubits)
+        states_list.append(state.copy())
 
-# Display circuit and animation
-draw_circuit(qc)
-st.plotly_chart(animate_multi_bloch(qc))
+# Display Bloch sphere animation
+st.plotly_chart(animate_bloch(states_list))
 
 # Download final Bloch sphere frame
-final_state = Statevector.from_instruction(qc)
 buffer = BytesIO()
-fig = animate_multi_bloch(qc)
+fig = animate_bloch(states_list)
 fig.write_image(buffer, format='png')
 st.download_button(
-    label="Download Final Bloch Sphere Image",
+    label="Download Bloch Sphere Image",
     data=buffer,
-    file_name="multi_bloch_final.png",
+    file_name="bloch_final.png",
     mime="image/png"
 )
