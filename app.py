@@ -1,10 +1,9 @@
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
-from io import BytesIO
 
-st.set_page_config(page_title="Pure Python Quantum Playground", layout="wide")
-st.title("🚀 Pure Python Quantum Computing Playground")
+st.set_page_config(page_title="Quantum Playground HTML Download", layout="wide")
+st.title("🚀 Quantum Computing Playground (Cloud Compatible)")
 
 # Sidebar options
 st.sidebar.header("Quantum Circuit Options")
@@ -14,10 +13,10 @@ algorithm = st.sidebar.selectbox(
 )
 qubits = st.sidebar.slider("Number of Qubits", 1, 2, 1)
 
-# Basic quantum gates in matrix form
+# Basic quantum gates
 H = 1/np.sqrt(2) * np.array([[1, 1], [1, -1]])
 X = np.array([[0, 1], [1, 0]])
-Z = np.array([[1, 0], [0, -1]])
+Z = np.array([[1, 0], [0, 1]])
 
 # Initialize state |0>
 def init_state(n):
@@ -32,7 +31,7 @@ def apply_gate(state, gate, qubit, n):
         full_gate = np.kron(full_gate, gate if i == qubit else np.eye(2))
     return full_gate @ state
 
-# Bloch coordinates from single qubit state
+# Bloch coordinates for single qubit
 def bloch_coords_single(state):
     alpha, beta = state[0], state[1]
     x = 2 * (alpha.conj()*beta).real
@@ -45,8 +44,10 @@ def animate_bloch(states):
     frames = []
     for state in states:
         x, y, z = bloch_coords_single(state)
-        frames.append(go.Frame(data=[go.Scatter3d(x=[x], y=[y], z=[z], mode='markers', 
-                                                  marker=dict(size=6, color='red'))]))
+        frames.append(go.Frame(data=[go.Scatter3d(
+            x=[x], y=[y], z=[z], mode='markers', marker=dict(size=6, color='red')
+        )]))
+    
     # Sphere wireframe
     u, v = np.mgrid[0:2*np.pi:50j, 0:np.pi:25j]
     xs = np.cos(u)*np.sin(v)
@@ -70,7 +71,7 @@ def animate_bloch(states):
     )
     return fig
 
-# Simulate circuit
+# Initialize and simulate circuit
 state = init_state(qubits)
 states_list = [state.copy()]
 
@@ -85,7 +86,6 @@ elif algorithm == "Quantum Teleportation":
     if qubits != 2:
         st.warning("Quantum teleportation requires 2 qubits")
     else:
-        # Simplified simulation of teleportation
         state = apply_gate(state, H, 0, qubits)
         states_list.append(state.copy())
         state = apply_gate(state, X, 1, qubits)
@@ -99,16 +99,15 @@ elif algorithm == "Superdense Coding":
         state = apply_gate(state, Z, 0, qubits)
         states_list.append(state.copy())
 
-# Display Bloch sphere animation
+# Display Bloch sphere
 fig = animate_bloch(states_list)
 st.plotly_chart(fig)
 
-# Download final Bloch sphere frame as PNG
-buffer = BytesIO()
-fig.write_image(buffer, format='png')
+# Download interactive HTML instead of PNG
+html_bytes = fig.to_html().encode("utf-8")
 st.download_button(
-    label="Download Bloch Sphere Image",
-    data=buffer,
-    file_name="bloch_final.png",
-    mime="image/png"
+    label="Download Interactive Bloch Sphere",
+    data=html_bytes,
+    file_name="bloch_final.html",
+    mime="text/html"
 )
