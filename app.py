@@ -1,6 +1,7 @@
 import streamlit as st
-from qiskit import QuantumCircuit, Aer, execute
+from qiskit import QuantumCircuit, execute
 from qiskit.quantum_info import Statevector
+from qiskit.providers.basicaer import QasmSimulator
 import plotly.graph_objects as go
 import numpy as np
 from io import BytesIO
@@ -16,7 +17,7 @@ algorithm = st.sidebar.selectbox(
 )
 qubits = st.sidebar.slider("Number of Qubits", 1, 3, 2)
 
-# Function to calculate Bloch sphere coordinates
+# Bloch sphere coordinates
 def bloch_coords(statevector):
     coords = []
     for amp in statevector.data:
@@ -25,7 +26,7 @@ def bloch_coords(statevector):
         coords.append((np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)))
     return coords
 
-# Function to animate multiple qubits on Bloch spheres
+# Animate multiple qubits
 def animate_multi_bloch(circuit):
     frames = []
     current_circuit = QuantumCircuit(circuit.num_qubits)
@@ -34,10 +35,8 @@ def animate_multi_bloch(circuit):
         current_circuit.append(instr, qargs, cargs)
         state = Statevector.from_instruction(current_circuit)
         x, y, z = zip(*bloch_coords(state))
-        traces = []
-        for xi, yi, zi in zip(x, y, z):
-            traces.append(go.Scatter3d(x=[xi], y=[yi], z=[zi], mode='markers',
-                                       marker=dict(size=6, color='red')))
+        traces = [go.Scatter3d(x=[xi], y=[yi], z=[zi], mode='markers',
+                               marker=dict(size=6, color='red')) for xi, yi, zi in zip(x, y, z)]
         frames.append(go.Frame(data=traces))
     
     # Sphere wireframe
@@ -49,11 +48,9 @@ def animate_multi_bloch(circuit):
     fig = go.Figure(
         data=[go.Surface(x=xs, y=ys, z=zs, opacity=0.1, colorscale='Blues', showscale=False)],
         layout=go.Layout(
-            scene=dict(
-                xaxis=dict(showgrid=False, visible=False),
-                yaxis=dict(showgrid=False, visible=False),
-                zaxis=dict(showgrid=False, visible=False)
-            ),
+            scene=dict(xaxis=dict(showgrid=False, visible=False),
+                       yaxis=dict(showgrid=False, visible=False),
+                       zaxis=dict(showgrid=False, visible=False)),
             updatemenus=[dict(type="buttons",
                               buttons=[dict(label="Play", method="animate",
                                             args=[None, {"frame": {"duration": 700, "redraw": True}, "fromcurrent": True}]),
@@ -65,11 +62,11 @@ def animate_multi_bloch(circuit):
     )
     return fig
 
-# Function to draw circuit diagram
+# Draw circuit
 def draw_circuit(qc):
     st.pyplot(qc.draw('mpl'))
 
-# Circuit definitions
+# Define circuits
 if algorithm == "Quantum Teleportation":
     qc = QuantumCircuit(3)
     st.subheader("Quantum Teleportation Circuit")
@@ -103,7 +100,7 @@ else:
         if qubits > 1:
             qc.cx(0,1)
 
-# Display circuit diagram and animation
+# Display circuit and animation
 draw_circuit(qc)
 st.plotly_chart(animate_multi_bloch(qc))
 
