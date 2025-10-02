@@ -85,6 +85,7 @@ elif algorithm == "Quantum Teleportation":
     if qubits != 2:
         st.warning("Quantum teleportation requires 2 qubits")
     else:
+        # Simplified simulation of teleportation
         state = apply_gate(state, H, 0, qubits)
         states_list.append(state.copy())
         state = apply_gate(state, X, 1, qubits)
@@ -99,11 +100,11 @@ elif algorithm == "Superdense Coding":
         states_list.append(state.copy())
 
 # Display Bloch sphere animation
-st.plotly_chart(animate_bloch(states_list))
-
-# Download final Bloch sphere frame
-buffer = BytesIO()
 fig = animate_bloch(states_list)
+st.plotly_chart(fig)
+
+# Download final Bloch sphere frame as PNG
+buffer = BytesIO()
 fig.write_image(buffer, format='png')
 st.download_button(
     label="Download Bloch Sphere Image",
