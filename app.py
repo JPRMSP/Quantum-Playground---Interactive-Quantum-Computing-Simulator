@@ -16,29 +16,26 @@ from mpl_toolkits.mplot3d import Axes3D
 # Streamlit Page Config
 st.set_page_config(page_title="Quantum Playground", page_icon="⚛️", layout="wide")
 
-# ---------------- Dark & Readable Theme -----------------
+# ---------------- Simple Academic Dark Theme -----------------
 st.markdown(
     """
     <style>
     /* Main background */
-    .main { background-color: #0e1117; color: #f0f0f0; }
+    .main { background-color: #0e1117; color: #f5f5f5; }
 
-    /* Text colors for readability */
+    /* All text elements */
     .stMarkdown, .stRadio, .stSelectbox, .stMultiSelect, .stButton, .stSlider, .stExpanderContent {
-        color: #f0f0f0 !important;
+        color: #f5f5f5 !important;
     }
 
-    /* Headers */
-    h1, h2, h3, h4 { color: #00ff99 !important; }
-
-    /* Links */
-    a { color: #00e6ff !important; }
+    /* Headers – simple gray */
+    h1, h2, h3, h4 { color: #f5f5f5 !important; }
 
     /* Code blocks */
     .stCodeBlock, .stCode { background-color: #1c1c1c; color: #ffffff; }
 
     /* Sidebar */
-    .css-1d391kg { background-color: #0e1117 !important; color: #f0f0f0 !important; }
+    .css-1d391kg { background-color: #0e1117 !important; color: #f5f5f5 !important; }
     </style>
     """,
     unsafe_allow_html=True,
